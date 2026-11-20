@@ -99,6 +99,31 @@ uint64_t MmAllocPage(void) {
     return 0;
 }
 
+uint64_t MmAllocContiguousPages(size_t count) {
+    if (count == 0) return 0;
+    size_t run = 0;
+    uint64_t start = 0;
+    for (uint64_t i = 256; i < g_total_pages; i++) { /* Start above 1 MB */
+        if (!bitmap_test(i)) {
+            if (run == 0) start = i;
+            run++;
+            if (run == count) {
+                for (uint64_t j = start; j < start + count; j++) {
+                    bitmap_set(j);
+                    g_used_pages++;
+                }
+                uint64_t phys = start * PAGE_SIZE;
+                memset((void*)(phys + g_hhdm_offset), 0, count * PAGE_SIZE);
+                return phys;
+            }
+        } else {
+            run = 0;
+        }
+    }
+    HalPrintf("[MM] CRITICAL: Out of contiguous physical memory (%llu pages)!\n", (uint64_t)count);
+    return 0;
+}
+
 void MmFreePage(uint64_t phys_addr) {
     uint64_t page = phys_addr / PAGE_SIZE;
     if (page > 0 && page < g_total_pages && bitmap_test(page)) {

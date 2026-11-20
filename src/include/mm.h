@@ -15,6 +15,7 @@
 /* Physical Memory Manager (PMM) */
 void     MmInitPmm(struct limine_memmap_response* memmap, uint64_t hhdm_offset);
 uint64_t MmAllocPage(void);
+uint64_t MmAllocContiguousPages(size_t count);
 void     MmFreePage(uint64_t phys_addr);
 uint64_t MmGetTotalMemory(void);
 uint64_t MmGetFreeMemory(void);

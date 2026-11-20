@@ -13,24 +13,14 @@ typedef struct _POOL_BLOCK {
 static POOL_BLOCK* g_heap_head = NULL;
 
 void MmInitPool(void) {
-    /* Allocate contiguous physical pages via HHDM for simplicity & speed */
-    uint64_t first_phys = MmAllocPage();
+    uint64_t first_phys = MmAllocContiguousPages(POOL_INITIAL_PAGES);
     if (!first_phys) {
         HalPrintf("[MM] Pool init failed: no memory\n");
         return;
     }
-    size_t allocated_pages = 1;
-    for (size_t i = 1; i < POOL_INITIAL_PAGES; i++) {
-        uint64_t p = MmAllocPage();
-        if (p != first_phys + i * PAGE_SIZE) {
-            if (p) MmFreePage(p);
-            break;
-        }
-        allocated_pages++;
-    }
 
     g_heap_head = (POOL_BLOCK*)(first_phys + MmGetHhdmOffset());
-    g_heap_head->size = (allocated_pages * PAGE_SIZE) - sizeof(POOL_BLOCK);
+    g_heap_head->size = (POOL_INITIAL_PAGES * PAGE_SIZE) - sizeof(POOL_BLOCK);
     g_heap_head->free = true;
     g_heap_head->next = NULL;
 
