@@ -2,6 +2,7 @@ CC      := gcc
 LD      := ld
 AS      := gcc
 CFLAGS  := -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check \
+           -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 \
            -fno-lto -fno-pic -fno-pie -m64 -march=x86-64 -mno-80387 -mno-mmx \
            -mno-sse -mno-sse2 -mno-red-zone -mcmodel=kernel \
            -Wall -Wextra -O2 -DLV_CONF_INCLUDE_SIMPLE \
