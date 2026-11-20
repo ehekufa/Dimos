@@ -22,8 +22,11 @@ jobs:
       - name: Fetch Limine and LVGL
         run: make deps
 
+      - name: Build DimaOS ELF
+        run: make -j$(nproc) elf
+
       - name: Build DimaOS ISO
-        run: make -j$(nproc) iso
+        run: make iso
 
       - name: Upload dimaos.iso artifact
         uses: actions/upload-artifact@v4
