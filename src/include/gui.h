@@ -7,6 +7,7 @@ typedef enum {
     APP_MY_COMPUTER = 0,
     APP_NOTEPAD,
     APP_CMD,
+    APP_CALCULATOR,
     APP_ABOUT
 } DIMA_APP_ID;
 
