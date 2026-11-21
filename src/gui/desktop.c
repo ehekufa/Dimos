@@ -380,7 +380,7 @@ void GuiOpenApp(DIMA_APP_ID app_id) {
         lv_label_set_text(rlbl, "Run");
         lv_obj_center(rlbl);
     } else if (app_id == APP_CALCULATOR) {
-        lv_obj_t* c = create_window_frame(APP_CALCULATOR, "Калькулятор", 320, 100, 260, 330);
+        lv_obj_t* c = create_window_frame(APP_CALCULATOR, "Calculator", 320, 100, 260, 330);
         if (!c) return;
         g_calc_display = lv_label_create(c);
         lv_obj_set_width(g_calc_display, lv_pct(100));
@@ -504,11 +504,11 @@ void GuiInit(void) {
     lv_obj_set_style_bg_color(g_desktop, lv_color_hex(COL_BG_DESKTOP), 0);
     lv_obj_clear_flag(g_desktop, LV_OBJ_FLAG_SCROLLABLE);
 
-    create_desktop_icon("Проводник",   20, 20,  APP_MY_COMPUTER);
-    create_desktop_icon("Блокнот",     20, 105, APP_NOTEPAD);
-    create_desktop_icon("Терминал",    20, 190, APP_CMD);
-    create_desktop_icon("Калькулятор", 20, 275, APP_CALCULATOR);
-    create_desktop_icon("О DimaOS",    20, 360, APP_ABOUT);
+    create_desktop_icon("Explorer",   20, 20,  APP_MY_COMPUTER);
+    create_desktop_icon("Notepad",    20, 105, APP_NOTEPAD);
+    create_desktop_icon("Terminal",   20, 190, APP_CMD);
+    create_desktop_icon("Calculator", 20, 275, APP_CALCULATOR);
+    create_desktop_icon("About\nDimaOS", 20, 360, APP_ABOUT);
 
     /* Taskbar */
     g_taskbar = lv_obj_create(g_desktop);
@@ -528,7 +528,7 @@ void GuiInit(void) {
     lv_obj_set_style_radius(start_btn, 8, 0);
     lv_obj_add_event_cb(start_btn, start_btn_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t* slbl = lv_label_create(start_btn);
-    lv_label_set_text(slbl, "Пуск");
+    lv_label_set_text(slbl, "Start");
     lv_obj_set_style_text_color(slbl, lv_color_hex(COL_TEXT), 0);
     lv_obj_center(slbl);
 
@@ -557,10 +557,10 @@ void GuiInit(void) {
     lv_obj_add_flag(g_start_menu, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_t* sm_hdr = lv_label_create(g_start_menu);
-    lv_label_set_text(sm_hdr, "DimaOS (Дима ОС)");
+    lv_label_set_text(sm_hdr, "DimaOS");
     lv_obj_set_style_text_color(sm_hdr, lv_color_hex(COL_ACCENT), 0);
 
-    const char* names[MAX_WINDOWS] = {"Проводник", "Блокнот", "Терминал", "Калькулятор", "О DimaOS"};
+    const char* names[MAX_WINDOWS] = {"Explorer", "Notepad", "Terminal", "Calculator", "About DimaOS"};
     for (int i = 0; i < MAX_WINDOWS; i++) {
         lv_obj_t* b = lv_btn_create(g_start_menu);
         lv_obj_set_size(b, lv_pct(100), 32);
@@ -578,7 +578,7 @@ void GuiInit(void) {
     lv_obj_set_style_bg_color(b_reb, lv_color_hex(COL_SURFACE_3), 0);
     lv_obj_add_event_cb(b_reb, reboot_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t* l_reb = lv_label_create(b_reb);
-    lv_label_set_text(l_reb, "Перезагрузка");
+    lv_label_set_text(l_reb, "Reboot");
     lv_obj_center(l_reb);
 
     lv_obj_t* b_shut = lv_btn_create(g_start_menu);
@@ -586,7 +586,7 @@ void GuiInit(void) {
     lv_obj_set_style_bg_color(b_shut, lv_color_hex(COL_DANGER), 0);
     lv_obj_add_event_cb(b_shut, shutdown_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t* l_shut = lv_label_create(b_shut);
-    lv_label_set_text(l_shut, "Выключение");
+    lv_label_set_text(l_shut, "Shutdown");
     lv_obj_center(l_shut);
 
     HalPrintf("[GUI] DimaOS Fluent Dark Desktop initialized\n");
