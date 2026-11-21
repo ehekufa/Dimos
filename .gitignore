@@ -1,0 +1,11 @@
+# Build artifacts
+build/
+iso_root/
+*.o
+*.d
+*.elf
+*.iso
+
+# Vendor dependencies (cloned automatically by Makefile / CI)
+vendor/limine/
+vendor/lvgl/
