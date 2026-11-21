@@ -545,25 +545,35 @@ void GuiInit(void) {
     lv_obj_set_style_text_color(g_tray_clock, lv_color_hex(COL_TEXT), 0);
     lv_label_set_text(g_tray_clock, "00:00");
 
-    /* Start Menu */
+    /* Start Menu (Windows 10 style: list on left + live tiles on right) */
     g_start_menu = lv_obj_create(g_desktop);
-    lv_obj_set_pos(g_start_menu, 10, (lv_coord_t)(fb->height - TASKBAR_HEIGHT - 300));
-    lv_obj_set_size(g_start_menu, 240, 290);
-    lv_obj_set_style_bg_color(g_start_menu, lv_color_hex(COL_SURFACE), 0);
+    lv_obj_set_pos(g_start_menu, 0, (lv_coord_t)(fb->height - TASKBAR_HEIGHT - 340));
+    lv_obj_set_size(g_start_menu, 420, 340);
+    lv_obj_set_style_bg_color(g_start_menu, lv_color_hex(0x181A22), 0);
     lv_obj_set_style_border_width(g_start_menu, 1, 0);
     lv_obj_set_style_border_color(g_start_menu, lv_color_hex(COL_BORDER), 0);
-    lv_obj_set_style_radius(g_start_menu, 12, 0);
-    lv_obj_set_flex_flow(g_start_menu, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_radius(g_start_menu, 8, 0);
+    lv_obj_set_style_pad_all(g_start_menu, 10, 0);
+    lv_obj_clear_flag(g_start_menu, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(g_start_menu, LV_OBJ_FLAG_HIDDEN);
 
-    lv_obj_t* sm_hdr = lv_label_create(g_start_menu);
+    /* Left column: App list + Power */
+    lv_obj_t* sm_left = lv_obj_create(g_start_menu);
+    lv_obj_set_pos(sm_left, 0, 0);
+    lv_obj_set_size(sm_left, 180, 318);
+    lv_obj_set_style_bg_opa(sm_left, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(sm_left, 0, 0);
+    lv_obj_set_style_pad_all(sm_left, 2, 0);
+    lv_obj_set_flex_flow(sm_left, LV_FLEX_FLOW_COLUMN);
+
+    lv_obj_t* sm_hdr = lv_label_create(sm_left);
     lv_label_set_text(sm_hdr, "DimaOS");
     lv_obj_set_style_text_color(sm_hdr, lv_color_hex(COL_ACCENT), 0);
 
     const char* names[MAX_WINDOWS] = {"Explorer", "Notepad", "Terminal", "Calculator", "About DimaOS"};
     for (int i = 0; i < MAX_WINDOWS; i++) {
-        lv_obj_t* b = lv_btn_create(g_start_menu);
-        lv_obj_set_size(b, lv_pct(100), 32);
+        lv_obj_t* b = lv_btn_create(sm_left);
+        lv_obj_set_size(b, lv_pct(100), 36);
         lv_obj_set_style_bg_color(b, lv_color_hex(COL_SURFACE_2), 0);
         lv_obj_set_style_radius(b, 6, 0);
         lv_obj_add_event_cb(b, desktop_icon_cb, LV_EVENT_CLICKED, (void*)(uintptr_t)i);
@@ -573,21 +583,47 @@ void GuiInit(void) {
         lv_obj_center(l);
     }
 
-    lv_obj_t* b_reb = lv_btn_create(g_start_menu);
-    lv_obj_set_size(b_reb, lv_pct(100), 28);
+    lv_obj_t* b_reb = lv_btn_create(sm_left);
+    lv_obj_set_size(b_reb, lv_pct(100), 32);
     lv_obj_set_style_bg_color(b_reb, lv_color_hex(COL_SURFACE_3), 0);
     lv_obj_add_event_cb(b_reb, reboot_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t* l_reb = lv_label_create(b_reb);
     lv_label_set_text(l_reb, "Reboot");
     lv_obj_center(l_reb);
 
-    lv_obj_t* b_shut = lv_btn_create(g_start_menu);
-    lv_obj_set_size(b_shut, lv_pct(100), 28);
+    lv_obj_t* b_shut = lv_btn_create(sm_left);
+    lv_obj_set_size(b_shut, lv_pct(100), 32);
     lv_obj_set_style_bg_color(b_shut, lv_color_hex(COL_DANGER), 0);
     lv_obj_add_event_cb(b_shut, shutdown_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t* l_shut = lv_label_create(b_shut);
     lv_label_set_text(l_shut, "Shutdown");
     lv_obj_center(l_shut);
+
+    /* Right column: Windows 10 Tiles */
+    lv_obj_t* sm_right = lv_obj_create(g_start_menu);
+    lv_obj_set_pos(sm_right, 190, 0);
+    lv_obj_set_size(sm_right, 208, 318);
+    lv_obj_set_style_bg_opa(sm_right, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(sm_right, 0, 0);
+    lv_obj_set_style_pad_all(sm_right, 4, 0);
+
+    static const uint32_t tile_colors[MAX_WINDOWS] = {
+        0x2563EB, 0x059669, 0x374151, 0xD97706, 0x7C3AED
+    };
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        int row = i / 2;
+        int col = i % 2;
+        lv_obj_t* tile = lv_btn_create(sm_right);
+        lv_obj_set_pos(tile, col * 98, row * 98);
+        lv_obj_set_size(tile, 92, 92);
+        lv_obj_set_style_bg_color(tile, lv_color_hex(tile_colors[i]), 0);
+        lv_obj_set_style_radius(tile, 4, 0);
+        lv_obj_add_event_cb(tile, desktop_icon_cb, LV_EVENT_CLICKED, (void*)(uintptr_t)i);
+        lv_obj_t* tl = lv_label_create(tile);
+        lv_label_set_text(tl, names[i]);
+        lv_obj_set_style_text_color(tl, lv_color_hex(COL_TEXT), 0);
+        lv_obj_center(tl);
+    }
 
     HalPrintf("[GUI] DimaOS Fluent Dark Desktop initialized\n");
 }
