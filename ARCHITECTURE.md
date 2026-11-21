@@ -1,72 +1,59 @@
 # DimaOS (Дима ОС / Димос) — Архитектура и сборка
 
-**DimaOS** — 64-битная операционная система для архитектуры `x86_64` (Long Mode) на языке C11 (`-ffreestanding`), спроектированная с нуля (Clean Room Design) с гибридным ядром в стиле NT и классическим графическим интерфейсом Windows на базе LVGL v8.3.
+**DimaOS** — 64-битная операционная система для архитектуры `x86_64` (Long Mode, Limine v8.x) на языке C11 (`-ffreestanding`), объединяющая 64-битное ядро в стиле NT с графической оболочкой LVGL v8.3 и полным набором системных подсистем и приложений в духе [DimOS-moya](https://github.com/ehekufa/DimOS-moya).
+
+## Что реализовано
+
+### Ядро и HAL (`src/ke/`, `src/hal/`, `src/mm/`)
+- **Higher-Half x86_64 ядро** (`0xffffffff80000000`), загрузка через **Limine v8.x** (Framebuffer, HHDM, Memmap, RSDP).
+- **GDT/TSS, 256-векторная IDT, 8259 PIC / Local APIC, PIT 1000 Гц**.
+- **CMOS RTC (`src/hal/rtc.c`)**: реальное время и дата для панели задач, экрана блокировки и команды `time`.
+- **ACPI Power-off (`src/hal/acpi.c`)**: поиск RSDP/RSDT/XSDT/FADT и разбор DSDT `_S5_` для корректного выключения питания (+ QEMU/Bochs/VirtualBox порты).
+- **Управление памятью**: физический битовый аллокатор (`pmm.c`), 4-уровневый пейджинг (`vmm.c`), куча ядра 16 МБ (`pool.c`).
+
+### Драйверы и хранилище (`src/drivers/`, `src/fs/`)
+- **Клавиатура PS/2 (`keyboard.c`)**: Set-1 + расширенные коды `0xE0` (стрелки, Home/End/PgUp/PgDn/Delete) и `0xE1`, Shift/CapsLock/Ctrl/Alt, polling-фолбэк для веб-эмуляторов.
+- **Мышь PS/2 / IntelliMouse (`mouse.c`)**: 3- и 4-байтовые пакеты с колесом прокрутки, проверка переполнения и знака X/Y, таймаут синхронизации 40 мс, повтор `0xFE` (resend) при инициализации 8042.
+- **PC Speaker (`sound.c`)**: генератор звука на PIT Ch2 + порт `0x61`, 100 Гц секвенсор нот (Startup Chime, Tiny March, Spring Waltz, Nyam, Burp, Beep/Alert).
+- **ATA PIO LBA28 (`ata.c`)**: автодетект Primary Master/Slave с чтением модели и размера диска.
+- **Файловые системы (`ramfs.c`, `volume.c`, `config.c`)**: RAM-диск `C:\`, записываемая **FAT12** на IDE-диске (`VolInit`, `VolFormat`, `VolReadFile`, `VolWriteFile`, `VolDeleteFile`) и файл настроек **`CONFIG.CFG`** с контрольной суммой (сохранение темы, яркости, громкости).
+
+### Графическая оболочка и 10 приложений (`src/gui/`)
+- **Оболочка LVGL v8.3 (`desktop.c`)**: экран блокировки (часы, дата, `Slide / Click to unlock`), рабочий стол с 10 иконками, панель задач, меню **Start** с Live-плитками, **Control Center** (регулятор яркости 5..15, тумблер звука, кнопка Lock, Power Off), 4 темы оформления (`Blue`, `Dark`, `Green`, `Orange`), экранный оверлей яркости.
+- **Системные приложения (`apps_system.c`)**: `Files` (просмотр RAM-диска `C:\` и FAT12, форматирование/удаление), `Notepad` (редактор с сохранением в `C:\NOTES.TXT` и на FAT12), `Terminal` (`help`, `ls`, `cat`, `write`, `rm`, `format`, `time`, `beep`, `clear`, `mem`, `sysinfo`, `theme`, `reboot`, `poweroff`), `Calculator`, `Settings` (выбор 4 тем, яркости, звука, сохранение `CONFIG.CFG`, информация о CPU/RAM/ATA).
+- **Развлечения и утилиты (`apps_fun.c`)**: `Paint` (16 цветов, 3 кисти, сохранение `C:\PAINT.RAW`), `Snake` (42x25 поле, стрелки/WASD/D-pad/клик), `Mines` (9x9, 10 мин, правый клик и режим флагов), `Music` (PC Speaker плеер), `Cheesy Balls` (миска с 9 сырными шариками, брызги кетчупа, счётчик отрыжки на 12 шариках).
 
 ## Структура проекта
 
 ```text
 .
-├── .github/workflows/
-│   └── build.yml           # CI/CD GitHub Actions (сборка dimaos.iso и загрузка артефакта)
-├── boot/
-│   └── limine.conf         # Конфигурация загрузчика Limine 8.x
+├── .github/workflows/build.yml  # CI/CD: сборка build/dimaos.elf и dimaos.iso
+├── boot/limine.conf             # Конфигурация Limine 8.x
 ├── src/
-│   ├── include/            # Заголовочные файлы ядра, HAL, MM, OB, PS, FS, драйверов и LVGL
-│   │   ├── types.h         # Базовые типы и NTSTATUS
-│   │   ├── rtl.h           # Clean-room Runtime Library
-│   │   ├── hal.h           # Интерфейсы HAL
-│   │   ├── mm.h            # PMM, VMM, Pool Allocator
-│   │   ├── ob.h            # Object Manager & Handle Table
-│   │   ├── ps.h            # Process & Thread Manager
-│   │   ├── fs.h            # RAM-диск (C:\)
-│   │   ├── drivers.h       # PS/2 клавиатура, мышь, Framebuffer
-│   │   ├── gui.h           # Графическая оболочка DimaOS
-│   │   └── lv_conf.h       # Конфигурация LVGL v8.3 для bare-metal
-│   ├── hal/                # Hardware Abstraction Layer
-│   │   ├── port.c          # Порты ввода-вывода, COM1 (0x3F8), Reboot/Shutdown
-│   │   ├── gdt.c           # 64-битная GDT (Ring 0 / Ring 3) и TSS
-│   │   ├── idt.c           # 64-битная IDT и диспетчер прерываний
-│   │   ├── isr.S           # Ассемблерные обработчики исключений и IRQ
-│   │   └── apic.c          # 8259 PIC, Local APIC и системный таймер PIT (1000 Гц)
-│   ├── mm/                 # Управление памятью
-│   │   ├── pmm.c           # Битовый аллокатор физических страниц 4 КБ
-│   │   ├── vmm.c           # 4-уровневая страничная адресация (PML4 -> PDPT -> PD -> PT)
-│   │   └── pool.c          # Ядерная куча (ExAllocatePool / ExFreePool)
-│   ├── ob/
-│   │   └── object.c        # Объектная модель и таблица дескрипторов (Handles)
-│   ├── ps/
-│   │   └── process.c       # Процессы (KPROCESS), потоки (KTHREAD) и планировщик
-│   ├── fs/
-│   │   └── ramfs.c         # Виртуальная ФС в памяти с адресацией тома C:\
-│   ├── drivers/            # Драйверы устройств
-│   │   ├── framebuffer.c   # Драйвер 32-bit XRGB8888 фреймбуфера Limine
-│   │   ├── keyboard.c      # Драйвер PS/2 клавиатуры (IRQ1)
-│   │   └── mouse.c         # Драйвер PS/2 мыши (IRQ12)
-│   ├── gui/
-│   │   └── desktop.c       # Оболочка DimaOS (Рабочий стол, Пуск, Панель задач, окна)
-│   └── ke/                 # Ядро
-│       ├── main.c          # Точка входа KeMain и инициализация подсистем
-│       └── rtl.c           # Реализация memcpy, memset, snprintf и др.
-├── vendor/                 # Внешние зависимости (подтягиваются через make deps)
-│   ├── limine/             # Limine v8.x-binary
-│   └── lvgl/               # LVGL release/v8.3
-├── linker.ld               # Скрипт линковщика (Higher Half Kernel 0xffffffff80000000)
-└── Makefile                # Сборка ядра и образа dimaos.iso
+│   ├── include/                 # types.h, rtl.h, hal.h, mm.h, ob.h, ps.h, fs.h, drivers.h, gui.h, lv_conf.h
+│   ├── hal/                     # port.c, gdt.c, idt.c, isr.S, apic.c, rtc.c, acpi.c
+│   ├── mm/                      # pmm.c, vmm.c, pool.c
+│   ├── ob/                      # object.c
+│   ├── ps/                      # process.c
+│   ├── fs/                      # ramfs.c, volume.c (FAT12), config.c (CONFIG.CFG)
+│   ├── drivers/                 # framebuffer.c, keyboard.c, mouse.c, sound.c, ata.c
+│   ├── gui/                     # desktop.c, apps_system.c, apps_fun.c
+│   └── ke/                      # main.c, rtl.c
+├── vendor/                      # limine/ и lvgl/ (через make deps)
+├── linker.ld                    # Higher-half линкерный скрипт (0xffffffff80000000)
+└── Makefile                     # Сборка ELF и ISO
 ```
 
 ## Сборка и запуск
 
-### Локальная сборка
 ```bash
-make deps          # Клонирует Limine 8.x и LVGL 8.3 в vendor/
-make -j$(nproc)    # Собирает build/dimaos.elf
-make iso           # Собирает загрузочный образ dimaos.iso (требуется xorriso)
+make deps          # Скачать Limine v8.x и LVGL v8.3
+make -j$(nproc)    # Собрать build/dimaos.elf
+make iso           # Собрать загрузочный dimaos.iso (требуется xorriso)
 ```
 
-### Запуск в QEMU
+Запуск в QEMU (с IDE-диском для сохранения `CONFIG.CFG` и файлов FAT12):
 ```bash
-qemu-system-x86_64 -cdrom dimaos.iso -m 512M -serial stdio
+qemu-img create -f raw disk.img 8M
+qemu-system-x86_64 -cdrom dimaos.iso -hda disk.img -m 512M -audiodev pa,id=snd0 -machine pcspk-audiodev=snd0 -serial stdio
 ```
-
-## CI/CD (GitHub Actions)
-При каждом `push` или `pull_request` в ветку `main`/`master` workflow `.github/workflows/build.yml` автоматически устанавливает инструменты сборки на Ubuntu, скачивает Limine и LVGL, собирает `dimaos.iso` и публикует его как артефакт `dimaos-iso`.

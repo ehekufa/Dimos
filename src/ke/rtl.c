@@ -68,6 +68,32 @@ int strncmp(const char* s1, const char* s2, size_t n) {
     return 0;
 }
 
+int toupper(int c) {
+    if (c >= 'a' && c <= 'z') {
+        return c - ('a' - 'A');
+    }
+    return c;
+}
+
+int strcasecmp(const char* s1, const char* s2) {
+    while (*s1 && (toupper((unsigned char)*s1) == toupper((unsigned char)*s2))) {
+        s1++;
+        s2++;
+    }
+    return toupper((unsigned char)*s1) - toupper((unsigned char)*s2);
+}
+
+int strncasecmp(const char* s1, const char* s2, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        int c1 = toupper((unsigned char)s1[i]);
+        int c2 = toupper((unsigned char)s2[i]);
+        if (c1 != c2 || s1[i] == '\0') {
+            return c1 - c2;
+        }
+    }
+    return 0;
+}
+
 char* strcpy(char* dest, const char* src) {
     char* d = dest;
     while ((*d++ = *src++));

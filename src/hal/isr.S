@@ -112,3 +112,5 @@ isr_common_stub:
 
     addq $16, %rsp
     iretq
+
+.section .note.GNU-stack,"",@progbits

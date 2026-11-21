@@ -60,7 +60,28 @@ bool HalIsApicEnabled(void);
 void     HalInitTimer(uint32_t frequency_hz);
 uint64_t HalGetTickCount(void);
 
-/* Power Management */
+/* CMOS Real-Time Clock */
+typedef struct {
+    uint8_t  seconds;
+    uint8_t  minutes;
+    uint8_t  hours;
+    uint8_t  day;
+    uint8_t  month;
+    uint16_t year;
+} DIMA_TIME;
+
+void     HalClockInit(void);
+void     HalClockGetTime(DIMA_TIME* out);
+uint8_t  HalClockSeconds(void);
+uint8_t  HalClockMinutes(void);
+uint8_t  HalClockHours(void);
+uint8_t  HalClockDay(void);
+uint8_t  HalClockMonth(void);
+uint16_t HalClockYear(void);
+
+/* ACPI & Power Management */
+void HalAcpiInit(uint64_t rsdp_addr, uint64_t hhdm_offset);
+bool HalAcpiPowerOff(void);
 void HalReboot(void);
 void HalShutdown(void);
 

@@ -15,6 +15,7 @@ static volatile uint64_t g_lapic_virt = 0;
 static bool g_apic_enabled = false;
 
 extern void lv_tick_inc(uint32_t tick_period);
+extern void DrvSoundTick(void);
 
 void HalInitPic(void) {
     HalOutPort8(PIC1_CMD, 0x11); HalIoWait();
@@ -77,6 +78,9 @@ bool HalIsApicEnabled(void) {
 static void timer_irq_handler(KTRAP_FRAME* frame) {
     g_tick_count++;
     lv_tick_inc(1);
+    if ((g_tick_count % 10ULL) == 0ULL) {
+        DrvSoundTick();
+    }
     PsSchedule(frame);
 }
 

@@ -13,14 +13,19 @@ typedef struct _POOL_BLOCK {
 static POOL_BLOCK* g_heap_head = NULL;
 
 void MmInitPool(void) {
-    uint64_t first_phys = MmAllocContiguousPages(POOL_INITIAL_PAGES);
+    size_t pages = 4096; /* 16 MB kernel heap for LVGL & apps */
+    uint64_t first_phys = MmAllocContiguousPages(pages);
+    if (!first_phys) {
+        pages = POOL_INITIAL_PAGES; /* Fallback to 8 MB */
+        first_phys = MmAllocContiguousPages(pages);
+    }
     if (!first_phys) {
         HalPrintf("[MM] Pool init failed: no memory\n");
         return;
     }
 
     g_heap_head = (POOL_BLOCK*)(first_phys + MmGetHhdmOffset());
-    g_heap_head->size = (POOL_INITIAL_PAGES * PAGE_SIZE) - sizeof(POOL_BLOCK);
+    g_heap_head->size = (pages * PAGE_SIZE) - sizeof(POOL_BLOCK);
     g_heap_head->free = true;
     g_heap_head->next = NULL;
 

@@ -31,9 +31,10 @@ void FsInit(void) {
     memset(g_files, 0, sizeof(g_files));
 
     create_default_file("C:\\README.TXT",
-        "Welcome to DimaOS (Дима ОС / Димос)!\r\n"
+        "Welcome to DimaOS v1.0.0!\r\n"
         "64-bit x86_64 Operating System with NT-style Hybrid Kernel.\r\n"
-        "Drive C:\\ is mounted in RAM-disk.\r\n");
+        "Drive C:\\ is mounted in RAM-disk.\r\n"
+        "IDE FAT12 persistence & CONFIG.CFG supported when a disk is attached.\r\n");
 
     create_default_file("C:\\SYSTEM.INI",
         "[DimaOS]\r\n"

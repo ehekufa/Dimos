@@ -90,7 +90,8 @@ void HalReboot(void) {
 
 void HalShutdown(void) {
     HalCli();
-    /* QEMU / Bochs / VirtualBox ACPI shutdown ports */
+    /* Try real ACPI S5 power-off first, then QEMU / Bochs / VirtualBox ports */
+    HalAcpiPowerOff();
     HalOutPort16(0x604, 0x2000);
     HalOutPort16(0xB004, 0x2000);
     HalOutPort16(0x4004, 0x3400);

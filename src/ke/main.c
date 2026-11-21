@@ -29,6 +29,12 @@ static volatile struct limine_hhdm_request g_hhdm_req = {
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_rsdp_request g_rsdp_req = {
+    .id = LIMINE_RSDP_REQUEST,
+    .revision = 0
+};
+
 __attribute__((used, section(".limine_requests_start")))
 static volatile LIMINE_REQUESTS_START_MARKER;
 
@@ -39,7 +45,7 @@ void KeMain(void) {
     HalCli();
     HalSerialInit();
     HalPrintf("\n========================================\n");
-    HalPrintf("  DimaOS (Дима ОС / Димос) v1.0.0\n");
+    HalPrintf("  DimaOS v1.0.0\n");
     HalPrintf("  64-bit x86_64 NT-style Hybrid Kernel\n");
     HalPrintf("========================================\n");
 
@@ -55,28 +61,35 @@ void KeMain(void) {
     }
 
     uint64_t hhdm_offset = g_hhdm_req.response->offset;
+    uint64_t rsdp_addr = g_rsdp_req.response ? (uint64_t)g_rsdp_req.response->address : 0;
 
-    /* 1. HAL: GDT, IDT, PIC, APIC */
+    /* 1. HAL: GDT, IDT, PIC, APIC, ACPI, RTC */
     HalInitGdt();
     HalInitIdt();
     HalInitPic();
     HalInitApic(hhdm_offset);
+    HalAcpiInit(rsdp_addr, hhdm_offset);
+    HalClockInit();
 
     /* 2. Memory Manager: PMM, VMM, Kernel Pool */
     MmInitPmm(g_memmap_req.response, hhdm_offset);
     MmInitVmm();
     MmInitPool();
 
-    /* 3. Object, Process/Thread, File System */
+    /* 3. Object, Process/Thread, File Systems & Persistent Config */
     ObInit();
     PsInit();
     FsInit();
 
-    /* 4. Drivers: Framebuffer, Keyboard, Mouse */
+    /* 4. Drivers: Framebuffer, Keyboard, Mouse, Sound, ATA IDE */
     struct limine_framebuffer* fb = g_fb_req.response->framebuffers[0];
     DrvFbInit(fb);
     DrvKeyboardInit();
     DrvMouseInit((int32_t)fb->width, (int32_t)fb->height);
+    DrvSoundInit();
+    DrvAtaInit();
+    VolInit();
+    CfgInit();
 
     /* 5. System Timer (1000 Hz) & Enable Interrupts */
     HalInitTimer(1000);
@@ -84,9 +97,11 @@ void KeMain(void) {
 
     /* 6. Graphical User Interface (LVGL) */
     GuiInit();
+    DrvSoundPlayStartup();
 
     HalPrintf("[KE] DimaOS boot complete. Entering GUI loop.\n");
     for (;;) {
+        DrvInputPoll();
         GuiTask();
         HalHlt();
     }
